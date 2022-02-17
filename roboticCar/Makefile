@@ -5,8 +5,10 @@ PROJ_NAME=main
 STM32CUBEPROG:= ../stmcubeprog/bin/STM32_Programmer.sh -vb 1 -q -c port=SWD 
 SDK = ../sdk
 
+# Put your STM32F4 library code directory here
+
 # Put your source files here (or *.c, etc)
-SRCS = *.c
+SRCS = *.c  
 
 # Normally you shouldn't need to change anything below this line!
 #######################################################################################
@@ -15,19 +17,31 @@ CC = $(GNUGCC)/arm-none-eabi-gcc
 OBJCOPY = $(GNUGCC)/arm-none-eabi-objcopy
 SIZE =  $(GNUGCC)/arm-none-eabi-size
 
-CFLAGS  = -g -O2 -Wall -T$(SDK)/stm32_flash.ld 
+#CFLAGS  = -g -O2 -Wfatal-errors -Tstm32_flash.ld 
+CFLAGS  = -g -O2 -Wall -T$(SDK)/stm32_flash.ld
 CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
+#CFLAGS += -DSL_FULL -DDEBUG
 # important flag is -fsingle-precision-constant which prevents the double precision emulation
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant
 CFLAGS += -I.
-
-# Include files from STM libraries
 CFLAGS += -I $(SDK)
 
+
+# Include files from STM libraries
+#CFLAGS += -I$(STM_COMMON)/Utilities/STM32F4-Discovery
+# CFLAGS += -I$(STM_COMMON)/Libraries/CMSIS/Include 
+# CFLAGS += -I$(STM_COMMON)/Libraries/CMSIS/ST/STM32F4xx/Include
+#CFLAGS += -I$(STM_COMMON)/Libraries/STM32F4xx_StdPeriph_Driver/inc
+# CFLAGS += -I cc3100_driver
+
+
+
 # add startup file to build
+# SRCS += $(STM_COMMON)/Libraries/CMSIS/ST/STM32F4xx/Source/Templates/TrueSTUDIO/startup_stm32f4xx.s 
 SRCS += $(SDK)/startup_stm32f4xx.s 
 SRCS += $(SDK)/system_stm32f4xx.c 
 OBJS = $(SRCS:.c=.o)
+
 
 
 .PHONY: proj
@@ -41,7 +55,6 @@ $(PROJ_NAME).elf: $(SRCS)
 	$(OBJCOPY) -O binary $(PROJ_NAME).elf $(PROJ_NAME).bin
 	$(SIZE) -B  $(PROJ_NAME).elf
 	ls -l $(PROJ_NAME).bin
-	@./build
 
 
 clean:
@@ -49,14 +62,9 @@ clean:
 	ls
 
 # Flash the STM32F4
-
-example:
-	@$(STM32CUBEPROG) -w students.bin  0x08000000 
-	@sleep 1
-	@$(STM32CUBEPROG) -hardRst 
-
 upload: proj
 	@$(STM32CUBEPROG) -w $(PROJ_NAME).bin  0x08000000 
 	@sleep 1
 	@$(STM32CUBEPROG) -hardRst 
+
 

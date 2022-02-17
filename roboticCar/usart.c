@@ -1,6 +1,6 @@
 #include "usart.h"
 
-volatile uint8_t g_usart2_buffer[USART2_BUFFER_SIZE];
+volatile uint8_t g_commandsBuffer[USART2_BUFFER_SIZE];
 volatile uint16_t g_usart2_widx = 0;
 volatile uint16_t g_usart2_ridx = 0;
 
@@ -41,10 +41,8 @@ void putcharUSART2(uint8_t data) {  /// print one character to USART2
 }
 
 void USART2_IRQHandler(void) {
-  uint8_t data;
-
   if (USART2->SR & (USART_SR_RXNE)) {
-    g_usart2_buffer[g_usart2_widx] = USART2->DR;
+    g_commandsBuffer[g_usart2_widx] = USART2->DR;
     g_usart2_widx++;
     if (g_usart2_widx >= (USART2_BUFFER_SIZE)) {
       g_usart2_widx = 0;

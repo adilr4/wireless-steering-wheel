@@ -7,6 +7,8 @@ uint16_t d2[10] = {0x5410, 0x5424, 0x5438, 0x544C, 0x5460,
                    0x5474, 0x5488, 0x549C, 0x54B0, 0x54C4};  // 21520-21700
 
 void initServoMotors();
+void parseMessage();
+uint8_t validateChecksum(uint8_t, uint8_t);
 
 void init() {
   initServoMotors();
@@ -18,13 +20,38 @@ int main(void) {
   init();
 
   while (1) {
-    if (g_usart2_ridx != g_usart2_widx) {
-      USART2->DR = g_usart2_buffer[g_usart2_ridx++];
-      if (g_usart2_ridx >= (USART2_BUFFER_SIZE)) {
-        g_usart2_ridx = 0;
+    parseMessage();
+  }
+}
+
+void parseMessage() {
+  uint8_t low, high;
+  if (g_usart2_ridx != g_usart2_widx && (g_usart2_ridx + 1) != g_usart2_widx) {
+    low = g_commandsBuffer[g_usart2_ridx++];
+    high = g_commandsBuffer[g_usart2_ridx++];
+
+    if (validateChecksum(low, high)) {
+      if (low & 0x20) {
+        TIM3->ARR = 21500;
+        TIM4->ARR = 21500;
+      } else {
+        if (low & 0x10) {
+          TIM3->ARR = d1[low & 0x0f];
+          TIM4->ARR = d2[high >> 4];
+        } else {
+          TIM3->ARR = d2[low & 0x0f];
+          TIM4->ARR = d1[high >> 4];
+        }
       }
     }
+    if (g_usart2_ridx >= (USART2_BUFFER_SIZE)) {
+      g_usart2_ridx = 0;
+    }
   }
+}
+
+uint8_t validateChecksum(uint8_t low, uint8_t high) {
+  return !((low >> 4) + (low & 0x0f) + (high >> 4) + (high & 0x0f));
 }
 
 void initServoMotors() {

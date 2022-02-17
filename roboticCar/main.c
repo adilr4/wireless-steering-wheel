@@ -6,6 +6,27 @@ uint16_t d1[10] = {0x53E8, 0x53D4, 0x53C0, 0x53AC, 0x5398,
 uint16_t d2[10] = {0x5410, 0x5424, 0x5438, 0x544C, 0x5460,
                    0x5474, 0x5488, 0x549C, 0x54B0, 0x54C4};  // 21520-21700
 
+void initServoMotors();
+
+void init() {
+  initServoMotors();
+  initUSART2(USART2_BAUDRATE_9600);
+  enIrqUSART2();
+}
+
+int main(void) {
+  init();
+
+  while (1) {
+    if (g_usart2_ridx != g_usart2_widx) {
+      USART2->DR = g_usart2_buffer[g_usart2_ridx++];
+      if (g_usart2_ridx >= (USART2_BUFFER_SIZE)) {
+        g_usart2_ridx = 0;
+      }
+    }
+  }
+}
+
 void initServoMotors() {
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;  //
   GPIOB->MODER |= 0x00002200;           // PB4 PB6
@@ -46,11 +67,4 @@ void initServoMotors() {
   // start counter
   TIM3->CR1 |= TIM_CR1_CEN;
   TIM4->CR1 |= TIM_CR1_CEN;
-}
-
-int main(void) {
-  initServoMotors();
-
-  while (1) {
-  }
 }

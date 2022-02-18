@@ -101,6 +101,6 @@ void getDataFromAngle(float x, float y) {
 }
 
 void scaleWithPotenciometer() {
-  leftWheel = int8_t(round((float)leftWheel * getADC1() / 4095));
-  rightWheel = int8_t(round((float)rightWheel * getADC1() / 4095));
+  leftWheel = (int8_t)round((float)leftWheel * getADC1() / 4095);
+  rightWheel = (int8_t)round((float)rightWheel * getADC1() / 4095);
 }

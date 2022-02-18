@@ -40,7 +40,7 @@ int main(void) {
 
     sendCommand(createCommand());
 
-    delay_ms(1000);
+    delay_ms(200);
   }
   return 0;
 }
@@ -67,6 +67,7 @@ uint16_t createCommand() {
 
 void getDataFromAngle(float x, float y) {
   if (x > 0) {  // ispravan polozaj
+    stopMode = 0;
     for (int i = 0; i < 10; ++i)
       if (y < -81 + i * angleOffset) {
         leftWheel = i;
@@ -82,13 +83,17 @@ void getDataFromAngle(float x, float y) {
       }
   } else {  // neispravan polozaj
     if (y > 70) {
+      stopMode = 0;
       leftWheel = 9;
       rightWheel = 0;
     } else if (y < -70) {
+      stopMode = 0;
       leftWheel = 0;
       rightWheel = 9;
     } else {
-      // stani
+      stopMode = 1;
+      leftWheel = 0;
+      rightWheel = 0;
     }
   }
 }

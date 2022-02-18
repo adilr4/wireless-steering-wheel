@@ -1,10 +1,10 @@
 #include "stm32f4xx.h"
 #include "usart.h"
 
-uint16_t d1[10] = {0x53E8, 0x53D4, 0x53C0, 0x53AC, 0x5398,
-                   0x5384, 0x5370, 0x535C, 0x5348, 0x5334};  // 21480-21300
-uint16_t d2[10] = {0x5410, 0x5424, 0x5438, 0x544C, 0x5460,
-                   0x5474, 0x5488, 0x549C, 0x54B0, 0x54C4};  // 21520-21700
+uint16_t d1[10] = {21500, 21480, 21460, 21440, 21420,
+                   21400, 21380, 21360, 21340, 21320};  // 21480-21300
+uint16_t d2[10] = {21520, 21540, 21560, 21580, 21600,
+                   21620, 21640, 21660, 21680, 21700};  // 21520-21700
 
 void initServoMotors();
 void parseMessage();
@@ -38,8 +38,8 @@ void parseMessage() {
 
     if (validateChecksum(low, high)) {
       if (high & 0x20) {
-        TIM3->ARR = 21500;
-        TIM4->ARR = 21500;
+        TIM3->ARR = 21520;
+        TIM4->ARR = 21520;
       } else {
         if (high & 0x10) {
           TIM3->ARR = d1[high & 0x0f];
@@ -60,7 +60,7 @@ uint8_t validateChecksum(uint8_t low, uint8_t high) {
   uint8_t r = (((low >> 4) + (low & 0x0f) + (high >> 4) + (high & 0x0f)) &
                0x0f) == 0x0f;
 
-  /* if (!r) GPIOD->ODR |= 0xF000; */
+  /* if (!r) GPIOD->ODR ^= 0xF000; */
 
   return r;
 }
@@ -81,8 +81,8 @@ void initServoMotors() {
   TIM3->ARR = 0x53FC;  // period of the PWM 21.7ms
   TIM4->ARR = 0x53FC;  // period of the PWM 21.3ms
 
-  TIM3->CCR1 = 20010;  // period of 20ms
-  TIM4->CCR1 = 20010;  // period of 20ms
+  TIM3->CCR1 = 20020;  // period of 20ms
+  TIM4->CCR1 = 20020;  // period of 20ms
 
   TIM3->CCMR1 |= (TIM_CCMR1_OC1PE) | (TIM_CCMR1_OC1M_2) | (TIM_CCMR1_OC1M_1) |
                  (TIM_CCMR1_OC1M_0);

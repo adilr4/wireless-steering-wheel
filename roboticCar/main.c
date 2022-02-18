@@ -19,6 +19,12 @@ void init() {
 int main(void) {
   init();
 
+  // for debug
+  /* RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN; */
+  /* GPIOD->MODER |= 0x55000000; */
+  /* GPIOD->OTYPER |= 0x00000000; */
+  /* GPIOD->OSPEEDR |= 0xFF000000; */
+
   while (1) {
     parseMessage();
   }
@@ -27,20 +33,20 @@ int main(void) {
 void parseMessage() {
   uint8_t low, high;
   if (g_usart2_ridx != g_usart2_widx && (g_usart2_ridx + 1) != g_usart2_widx) {
-    low = g_commandsBuffer[g_usart2_ridx++];
     high = g_commandsBuffer[g_usart2_ridx++];
+    low = g_commandsBuffer[g_usart2_ridx++];
 
     if (validateChecksum(low, high)) {
-      if (low & 0x20) {
+      if (high & 0x20) {
         TIM3->ARR = 21500;
         TIM4->ARR = 21500;
       } else {
-        if (low & 0x10) {
-          TIM3->ARR = d1[low & 0x0f];
-          TIM4->ARR = d2[high >> 4];
+        if (high & 0x10) {
+          TIM3->ARR = d1[high & 0x0f];
+          TIM4->ARR = d2[low >> 4];
         } else {
-          TIM3->ARR = d2[low & 0x0f];
-          TIM4->ARR = d1[high >> 4];
+          TIM3->ARR = d2[high & 0x0f];
+          TIM4->ARR = d1[low >> 4];
         }
       }
     }
@@ -51,7 +57,12 @@ void parseMessage() {
 }
 
 uint8_t validateChecksum(uint8_t low, uint8_t high) {
-  return !((low >> 4) + (low & 0x0f) + (high >> 4) + (high & 0x0f));
+  uint8_t r = (((low >> 4) + (low & 0x0f) + (high >> 4) + (high & 0x0f)) &
+               0x0f) == 0x0f;
+
+  /* if (!r) GPIOD->ODR |= 0xF000; */
+
+  return r;
 }
 
 void initServoMotors() {

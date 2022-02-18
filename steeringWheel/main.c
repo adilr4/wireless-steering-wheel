@@ -4,9 +4,20 @@
 #include "lis302dl.h"
 #include "usart.h"
 
+#define IRQ_IDLE		0
+#define IRQ_DETECTED		1
+#define IRQ_WAIT4LOW		2
+#define IRQ_DEBOUNCE		3
+
+volatile uint32_t g_irq_cnt = 0;
+volatile uint8_t g_gpioa_irq_state = (IRQ_IDLE);
+volatile uint32_t g_irq_timer = 0;
+
 void getDataFromAngle(float, float);
 void scaleWithPotenciometer();
 uint16_t createCommand();
+void serviceIRQA(void);
+void initPushbutton();
 
 const int angleOffset = 9;
 int8_t leftWheel;
@@ -15,6 +26,7 @@ uint8_t directionMode = 1;
 uint8_t stopMode = 0;
 
 void init() {
+  initPushbutton();
   initAccelerometer();
   initADC1();
   initUSART2(USART2_BAUDRATE_9600);
@@ -27,6 +39,7 @@ int main(void) {
   int8_t accelerometerData[3];
 
   while (1) {
+    serviceIRQA();
     getDataFromAccelerometer(accelerometerData);
 
     float x = accelerometerData[0];
@@ -103,4 +116,69 @@ void getDataFromAngle(float x, float y) {
 void scaleWithPotenciometer() {
   leftWheel = (int8_t)round((float)leftWheel * getADC1() / 4095);
   rightWheel = (int8_t)round((float)rightWheel * getADC1() / 4095);
+}
+
+void initPushbutton() {
+  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+  GPIOA->MODER &= ~0x00000003;  										// 
+	
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;								// enable clock on SYSCFG register
+  SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI0_PA;						// select PA 0 as interrupt source p259
+  EXTI->IMR = EXTI_IMR_MR0;											// enable interrupt on EXTI_Line0
+  EXTI->EMR &= ~EXTI_EMR_MR0;											// disable event on EXTI_Line0
+  EXTI->RTSR = EXTI_RTSR_TR0;	
+  EXTI->FTSR = 0x00000000;	
+	
+  NVIC_EnableIRQ(EXTI0_IRQn);
+}
+
+void EXTI0_IRQHandler(void)
+{
+ 	if((EXTI->PR & EXTI_PR_PR0) == EXTI_PR_PR0)							// EXTI_Line0 interrupt pending?
+        {
+		if(g_gpioa_irq_state == (IRQ_IDLE))
+		{
+			directionMode = !directionMode;
+			g_gpioa_irq_state = (IRQ_DETECTED);
+		}
+		EXTI->PR = EXTI_PR_PR0;											// clear EXTI_Line0 interrupt flag
+	}
+}
+
+
+void serviceIRQA(void)
+{
+	switch(g_gpioa_irq_state)
+	{
+		case(IRQ_IDLE):
+		{
+			break;
+		}
+		case(IRQ_DETECTED):
+		{
+			g_irq_cnt++;
+			g_gpioa_irq_state = (IRQ_WAIT4LOW);
+			break;
+		}
+		case(IRQ_WAIT4LOW):
+		{
+			if((GPIOA->IDR & 0x0001) == 0x0000)
+			{
+				g_gpioa_irq_state = (IRQ_DEBOUNCE);
+				g_irq_timer = getSYSTIMER();
+			}
+			break;
+		}
+		case(IRQ_DEBOUNCE):
+		{
+			if(chk4TimeoutSYSTIMER(g_irq_timer, 50000) == (SYSTIMER_TIMEOUT))
+			{
+				g_gpioa_irq_state = (IRQ_IDLE);
+			}
+		}
+		default:
+		{
+			break;
+		}
+	}
 }

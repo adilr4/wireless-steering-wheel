@@ -1,4 +1,5 @@
 #include <math.h>
+#include "adc.h"
 #include "delay.h"
 #include "lis302dl.h"
 #include "usart.h"
@@ -15,6 +16,7 @@ uint8_t stopMode = 0;
 
 void init() {
   initAccelerometer();
+  initADC1();
   initUSART2(USART2_BAUDRATE_9600);
   enIrqUSART2();
 }
@@ -36,7 +38,7 @@ int main(void) {
 
     getDataFromAngle(xAngle, yAngle);
 
-    // scaleWithPotenciometer();
+    scaleWithPotenciometer();
 
     sendCommand(createCommand());
 
@@ -98,5 +100,7 @@ void getDataFromAngle(float x, float y) {
   }
 }
 
-void scaleWithPotenciometer() {}
-
+void scaleWithPotenciometer() {
+  leftWheel = int8_t(round((float)leftWheel * getADC1() / 4095));
+  rightWheel = int8_t(round((float)rightWheel * getADC1() / 4095));
+}

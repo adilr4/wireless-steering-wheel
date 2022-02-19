@@ -2,16 +2,20 @@
 #include "stm32f4xx.h"
 #include "usart.h"
 
-uint16_t d1[10] = {21500, 21480, 21460, 21440, 21420,
-                   21400, 21380, 21360, 21340, 21320};  // 21480-21300
-uint16_t d2[10] = {21520, 21540, 21560, 21580, 21600,
-                   21620, 21640, 21660, 21680, 21700};  // 21520-21700
+/* uint16_t d1[10] = {21500, 21480, 21460, 21440, 21420, */
+/*                    21400, 21380, 21360, 21340, 21320};  // 21480-21300 */
+/* uint16_t d2[10] = {21520, 21540, 21560, 21580, 21600, */
+/*                    21620, 21640, 21660, 21680, 21700};  // 21520-21700 */
+uint16_t d1[16], d2[16];
+const uint16_t pausePeriod = 20005, stopPeriod = 215200;
 
 void initServoMotors();
 void parseMessage();
 uint8_t validateChecksum(uint8_t, uint8_t);
+void initPWMvalues();
 
 void init() {
+  initPWMvalues();
   initServoMotors();
   initUSART2(USART2_BAUDRATE_9600);
   enIrqUSART2();
@@ -32,24 +36,19 @@ int main(void) {
 
   while (1) {
     pingSteeringWheel();
-    if (g_usart2_ridx != g_usart2_widx && (g_usart2_ridx + 1) != g_usart2_widx)
-    {
+    if (g_usart2_ridx != g_usart2_widx &&
+        (g_usart2_ridx + 1) != g_usart2_widx) {
       parseMessage();
       connectionLost = 0;
-    } 
-    else
-    {
-      if (connectionLost) 
-      {
-        if (chk4TimeoutSYSTIMER(connectionLostTime, 3000000) ==  SYSTIMER_TIMEOUT) 
-        {
-          TIM3->ARR = 21520;
-          TIM4->ARR = 21520;
+    } else {
+      if (connectionLost) {
+        if (chk4TimeoutSYSTIMER(connectionLostTime, 3000000) ==
+            SYSTIMER_TIMEOUT) {
+          TIM3->ARR = stopPeriod;
+          TIM4->ARR = stopPeriod;
           connectionLost = 0;
         }
-      } 
-      else 
-      { 
+      } else {
         connectionLostTime = getSYSTIMER();
         connectionLost = 1;
       }
@@ -64,8 +63,8 @@ void parseMessage() {
 
   if (validateChecksum(low, high)) {
     if (high & 0x20) {
-      TIM3->ARR = 21520;
-      TIM4->ARR = 21520;
+      TIM3->ARR = stopPeriod;
+      TIM4->ARR = stopPeriod;
     } else {
       if (high & 0x10) {
         TIM3->ARR = d1[high & 0x0f];
@@ -130,4 +129,11 @@ void initServoMotors() {
   // start counter
   TIM3->CR1 |= TIM_CR1_CEN;
   TIM4->CR1 |= TIM_CR1_CEN;
+}
+
+void initPWMvalues() {
+  for (int i = 0; i < 16; ++i) {
+    d1[i] = stopPeriod - i * 200 / 16;
+    d2[i] = stopPeriod + i * 200 / 16;
+  }
 }

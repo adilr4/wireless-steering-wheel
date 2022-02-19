@@ -18,6 +18,7 @@ void scaleWithPotenciometer();
 uint16_t createCommand();
 void serviceIRQA(void);
 void initPushbutton();
+void filterDataFromAccelerometer(int8_t*);
 
 const int angleOffset = 9;
 int8_t leftWheel;
@@ -48,8 +49,10 @@ int main(void) {
   while (1) {
     serviceIRQA();
 
+    filterDataFromAccelerometer(accelerometerData);
+
     if (checkCarPing) {
-      getDataFromAccelerometer(accelerometerData);
+      /* getDataFromAccelerometer(accelerometerData); */
 
       x = accelerometerData[0];
       y = accelerometerData[1];
@@ -63,10 +66,10 @@ int main(void) {
       scaleWithPotenciometer();
 
       sendCommand(createCommand());
-       checkCarPing = 0;
+      checkCarPing = 0;
     }
-    delay_ms(200);
   }
+
   return 0;
 }
 
@@ -184,4 +187,22 @@ void serviceIRQA(void) {
     }
     default: { break; }
   }
+}
+
+void filterDataFromAccelerometer(int8_t* data) {
+  uint16_t n = 0;
+  int16_t xSum = 0, ySum = 0, zSum = 0;
+
+  uint32_t gatherDataTime = getSYSTIMER();
+  while (chk4TimeoutSYSTIMER(gatherDataTime, 200) == SYSTIMER_TIMEOUT) {
+    getDataFromAccelerometer(data);
+    xSum += data[0];
+    ySum += data[1];
+    zSum += data[2];
+    ++n;
+  }
+
+  data[0] = xSum / n;
+  data[1] = ySum / n;
+  data[2] = zSum / n;
 }

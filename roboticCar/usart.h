@@ -17,6 +17,7 @@ void putcharUSART2(uint8_t data);
 
 void enIrqUSART2(void);
 void disIrqUSART2(void);
+void pingSteeringWheel(void);
 
 extern volatile uint8_t g_commandsBuffer[USART2_BUFFER_SIZE];
 extern volatile uint16_t g_usart2_widx;

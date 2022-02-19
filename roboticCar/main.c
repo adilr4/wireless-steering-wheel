@@ -1,3 +1,4 @@
+#include "delay.h"
 #include "stm32f4xx.h"
 #include "usart.h"
 
@@ -14,10 +15,14 @@ void init() {
   initServoMotors();
   initUSART2(USART2_BAUDRATE_9600);
   enIrqUSART2();
+  initSYSTIMER();
 }
 
 int main(void) {
   init();
+
+  uint32_t connectionLostTime;
+  uint8_t connectionLost = 0;
 
   // for debug
   /* RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN; */
@@ -26,33 +31,47 @@ int main(void) {
   /* GPIOD->OSPEEDR |= 0xFF000000; */
 
   while (1) {
-    parseMessage();
+    pingSteeringWheel();
+    if (g_usart2_ridx != g_usart2_widx &&
+        (g_usart2_ridx + 1) != g_usart2_widx) {
+      parseMessage();
+    } else {
+      if (connectionLost) {
+        if (chk4TimeoutSYSTIMER(connectionLostTime, 3000000) ==
+            SYSTIMER_TIMEOUT) {
+          TIM3->ARR = 21520;
+          TIM4->ARR = 21520;
+          connectionLost = 0;
+        }
+      } else {
+        connectionLostTime = getSYSTIMER();
+        connectionLost = 1;
+      }
+    }
   }
 }
 
 void parseMessage() {
   uint8_t low, high;
-  if (g_usart2_ridx != g_usart2_widx && (g_usart2_ridx + 1) != g_usart2_widx) {
-    high = g_commandsBuffer[g_usart2_ridx++];
-    low = g_commandsBuffer[g_usart2_ridx++];
+  high = g_commandsBuffer[g_usart2_ridx++];
+  low = g_commandsBuffer[g_usart2_ridx++];
 
-    if (validateChecksum(low, high)) {
-      if (high & 0x20) {
-        TIM3->ARR = 21520;
-        TIM4->ARR = 21520;
+  if (validateChecksum(low, high)) {
+    if (high & 0x20) {
+      TIM3->ARR = 21520;
+      TIM4->ARR = 21520;
+    } else {
+      if (high & 0x10) {
+        TIM3->ARR = d1[high & 0x0f];
+        TIM4->ARR = d2[low >> 4];
       } else {
-        if (high & 0x10) {
-          TIM3->ARR = d1[high & 0x0f];
-          TIM4->ARR = d2[low >> 4];
-        } else {
-          TIM3->ARR = d2[high & 0x0f];
-          TIM4->ARR = d1[low >> 4];
-        }
+        TIM3->ARR = d2[high & 0x0f];
+        TIM4->ARR = d1[low >> 4];
       }
     }
-    if (g_usart2_ridx >= (USART2_BUFFER_SIZE)) {
-      g_usart2_ridx = 0;
-    }
+  }
+  if (g_usart2_ridx >= (USART2_BUFFER_SIZE)) {
+    g_usart2_ridx = 0;
   }
 }
 

@@ -43,24 +43,28 @@ int main(void) {
   /* GPIOD->OSPEEDR |= 0xFF000000; */
 
   int8_t accelerometerData[3];
+  float x, y, z, xAngle, yAngle;
 
   while (1) {
     serviceIRQA();
-    getDataFromAccelerometer(accelerometerData);
 
-    float x = accelerometerData[0];
-    float y = accelerometerData[1];
-    float z = accelerometerData[2];
+    if (checkCarPing) {
+      getDataFromAccelerometer(accelerometerData);
 
-    float xAngle = atanf(x / sqrt(y * y + z * z)) * 180 / 3.14;
-    float yAngle = atanf(y / sqrt(x * x + z * z)) * 180 / 3.14;
+      x = accelerometerData[0];
+      y = accelerometerData[1];
+      z = accelerometerData[2];
 
-    getDataFromAngle(xAngle, yAngle);
+      xAngle = atanf(x / sqrt(y * y + z * z)) * 180 / 3.14;
+      yAngle = atanf(y / sqrt(x * x + z * z)) * 180 / 3.14;
 
-    scaleWithPotenciometer();
+      getDataFromAngle(xAngle, yAngle);
 
-    sendCommand(createCommand());
+      scaleWithPotenciometer();
 
+      sendCommand(createCommand());
+       checkCarPing = 0;
+    }
     delay_ms(200);
   }
   return 0;

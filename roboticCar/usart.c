@@ -40,6 +40,11 @@ void putcharUSART2(uint8_t data) {  /// print one character to USART2
   USART2->DR = data;
 }
 
+void pingSteeringWheel(void) {
+  putcharUSART2(0xA5);
+}
+
+
 void USART2_IRQHandler(void) {
   if (USART2->SR & (USART_SR_RXNE)) {
     g_commandsBuffer[g_usart2_widx] = USART2->DR;

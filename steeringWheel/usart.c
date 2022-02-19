@@ -1,8 +1,6 @@
 #include "usart.h"
 
-volatile uint8_t g_commandsBuffer[USART2_BUFFER_SIZE];
-volatile uint16_t g_usart2_widx = 0;
-volatile uint16_t g_usart2_ridx = 0;
+volatile uint8_t checkCarPing = 0; 
 
 void initUSART2(uint32_t baudrate) {
   // USART2: PA2 -> TX & PA3 -> RX
@@ -47,11 +45,10 @@ void sendCommand(uint16_t command) {
 
 void USART2_IRQHandler(void) {
   if (USART2->SR & (USART_SR_RXNE)) {
-    g_commandsBuffer[g_usart2_widx] = USART2->DR;
-    g_usart2_widx++;
-    if (g_usart2_widx >= (USART2_BUFFER_SIZE)) {
-      g_usart2_widx = 0;
-    }
+   uint8_t command = USART2->DR;
+    if(command == 0xA5){
+     checkCarPing = 1;
+   } 
   }
 }
 

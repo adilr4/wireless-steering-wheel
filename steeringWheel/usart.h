@@ -19,7 +19,5 @@ void sendCommand(uint16_t command);
 void enIrqUSART2(void);
 void disIrqUSART2(void);
 
-extern volatile uint8_t g_commandsBuffer[USART2_BUFFER_SIZE];
-extern volatile uint16_t g_usart2_widx;
-extern volatile uint16_t g_usart2_ridx;
+extern volatile uint8_t checkCarPing;
 #endif

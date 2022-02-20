@@ -20,6 +20,8 @@ void serviceIRQA(void);
 void initPushbutton();
 void filterDataFromAccelerometer(int8_t*);
 void calculateWheels(int8_t* data);
+void initLEDS();
+void setLED();
 
 const int angleOffset = 9;
 float leftWheelPercentage;
@@ -30,6 +32,7 @@ uint8_t stopMode = 0;
 void init() {
   initSYSTIMER();
   initPushbutton();
+  initLEDS();
   initAccelerometer();
   initADC1();
   initUSART2(USART2_BAUDRATE_9600);
@@ -39,11 +42,6 @@ void init() {
 int main(void) {
   init();
 
-  /* RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN; */
-  /* GPIOD->MODER |= 0x55000000; */
-  /* GPIOD->OTYPER |= 0x00000000; */
-  /* GPIOD->OSPEEDR |= 0xFF000000; */
-
   int8_t accelerometerData[3];
 
   while (1) {
@@ -51,9 +49,11 @@ int main(void) {
 
     filterDataFromAccelerometer(accelerometerData);
 
+    GPIOD->ODR &= ~(0xF000);
     if (checkCarPing) {
       /* getDataFromAccelerometer(accelerometerData); */
 
+      setLED();
       calculateWheels(accelerometerData);
 
       sendCommand(createCommand());
@@ -110,6 +110,23 @@ void getDataFromAngle(float x, float y) {
       leftWheelPercentage = 0;
       rightWheelPercentage = 0;
     }
+  }
+}
+
+void initLEDS() {
+  RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN;
+  GPIOD->MODER |= 0x55000000;
+  GPIOD->OTYPER |= 0x00000000;
+  GPIOD->OSPEEDR |= 0xFF000000;
+}
+
+void setLED() {
+  if (stopMode) {
+    GPIOD->ODR |= 0xF000;
+  } else if (directionMode) {
+    GPIOD->ODR |= 0x1000;
+  } else {
+    GPIOD->ODR |= 0x4000;
   }
 }
 

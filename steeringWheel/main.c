@@ -45,7 +45,6 @@ int main(void) {
   /* GPIOD->OSPEEDR |= 0xFF000000; */
 
   int8_t accelerometerData[3];
-  /* float x, y, z, xAngle, yAngle; */
 
   while (1) {
     serviceIRQA();
@@ -67,9 +66,9 @@ int main(void) {
 
 uint16_t createCommand() {
   uint8_t leftWheel =
-      (uint8_t)round(leftWheelPercentage * 100 / ((float)100 / 16));
+      (uint8_t)round(leftWheelPercentage * 100 / ((float)100 / 15));
   uint8_t rightWheel =
-      (uint8_t)round(rightWheelPercentage * 100 / ((float)100 / 16));
+      (uint8_t)round(rightWheelPercentage * 100 / ((float)100 / 15));
 
   uint8_t header = 0x0C;
   if (stopMode) {

@@ -191,10 +191,11 @@ void serviceIRQA(void) {
 
 void filterDataFromAccelerometer(int8_t* data) {
   uint16_t n = 0;
-  int16_t xSum = 0, ySum = 0, zSum = 0;
+  int32_t xSum = 0, ySum = 0, zSum = 0;
 
   uint32_t gatherDataTime = getSYSTIMER();
-  while (chk4TimeoutSYSTIMER(gatherDataTime, 200) == SYSTIMER_TIMEOUT) {
+  while (chk4TimeoutSYSTIMER(gatherDataTime, 200000) !=
+         SYSTIMER_TIMEOUT) {  // 200ms
     getDataFromAccelerometer(data);
     xSum += data[0];
     ySum += data[1];

@@ -32,18 +32,24 @@ int main(void) {
 
   while (1) {
     pingSteeringWheel();
-    if (g_usart2_ridx != g_usart2_widx &&
-        (g_usart2_ridx + 1) != g_usart2_widx) {
+    if (g_usart2_ridx != g_usart2_widx && (g_usart2_ridx + 1) != g_usart2_widx)
+    {
       parseMessage();
-    } else {
-      if (connectionLost) {
-        if (chk4TimeoutSYSTIMER(connectionLostTime, 3000000) ==
-            SYSTIMER_TIMEOUT) {
+      connectionLost = 0;
+    } 
+    else
+    {
+      if (connectionLost) 
+      {
+        if (chk4TimeoutSYSTIMER(connectionLostTime, 3000000) ==  SYSTIMER_TIMEOUT) 
+        {
           TIM3->ARR = 21520;
           TIM4->ARR = 21520;
           connectionLost = 0;
         }
-      } else {
+      } 
+      else 
+      { 
         connectionLostTime = getSYSTIMER();
         connectionLost = 1;
       }

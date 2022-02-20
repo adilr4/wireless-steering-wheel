@@ -155,11 +155,13 @@ void EXTI0_IRQHandler(void) {
     if (g_gpioa_irq_state == (IRQ_IDLE)) {
       /* directionMode = !directionMode; */
 
-      if (directionMode)
-        directionMode = 0;
-      else
-        directionMode = 1;
-      g_gpioa_irq_state = (IRQ_DETECTED);
+      if ((leftWheelPercentage < 1) && (rightWheelPercentage < 1)) {
+        if (directionMode)
+          directionMode = 0;
+        else
+          directionMode = 1;
+        g_gpioa_irq_state = (IRQ_DETECTED);
+      }
     }
     EXTI->PR = EXTI_PR_PR0;  // clear EXTI_Line0 interrupt flag
   }

@@ -155,7 +155,7 @@ void EXTI0_IRQHandler(void) {
     if (g_gpioa_irq_state == (IRQ_IDLE)) {
       /* directionMode = !directionMode; */
 
-      if ((leftWheelPercentage < 1) && (rightWheelPercentage < 1)) {
+      if ((leftWheelPercentage < 0.2) && (rightWheelPercentage < 0.2)) {
         if (directionMode)
           directionMode = 0;
         else

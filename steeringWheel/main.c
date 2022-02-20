@@ -19,10 +19,11 @@ uint16_t createCommand();
 void serviceIRQA(void);
 void initPushbutton();
 void filterDataFromAccelerometer(int8_t*);
+void calculateWheels(int8_t* data);
 
 const int angleOffset = 9;
-int8_t leftWheel;
-int8_t rightWheel;
+float leftWheelPercentage;
+float rightWheelPercentage;
 uint8_t directionMode = 1;
 uint8_t stopMode = 0;
 
@@ -44,7 +45,6 @@ int main(void) {
   /* GPIOD->OSPEEDR |= 0xFF000000; */
 
   int8_t accelerometerData[3];
-  float x, y, z, xAngle, yAngle;
 
   while (1) {
     serviceIRQA();
@@ -54,16 +54,7 @@ int main(void) {
     if (checkCarPing) {
       /* getDataFromAccelerometer(accelerometerData); */
 
-      x = accelerometerData[0];
-      y = accelerometerData[1];
-      z = accelerometerData[2];
-
-      xAngle = atanf(x / sqrt(y * y + z * z)) * 180 / 3.14;
-      yAngle = atanf(y / sqrt(x * x + z * z)) * 180 / 3.14;
-
-      getDataFromAngle(xAngle, yAngle);
-
-      scaleWithPotenciometer();
+      calculateWheels(accelerometerData);
 
       sendCommand(createCommand());
       checkCarPing = 0;
@@ -74,6 +65,11 @@ int main(void) {
 }
 
 uint16_t createCommand() {
+  uint8_t leftWheel =
+      (uint8_t)round(leftWheelPercentage * 100 / ((float)100 / 15));
+  uint8_t rightWheel =
+      (uint8_t)round(rightWheelPercentage * 100 / ((float)100 / 15));
+
   uint8_t header = 0x0C;
   if (stopMode) {
     header |= 0x02;
@@ -82,55 +78,61 @@ uint16_t createCommand() {
     header |= 0x01;
   }
 
-  /* uint8_t high = (leftWheel & 0x0f); */
-  /* uint8_t low = (rightWheel & 0x0f); */
-
-  /* uint8_t checksum = 0x0f - ((header + high + low) & 0x0f); */
   uint8_t checksum = 0x0f - ((header + leftWheel + rightWheel) & 0x0f);
 
   uint16_t command = 0x0;
-  /* command |= (header << 12) | (high << 8) | (low << 4) | checksum; */
   command |= (header << 12) | (leftWheel << 8) | (rightWheel << 4) | checksum;
 
   return command;
 }
 
 void getDataFromAngle(float x, float y) {
-  if (x > 0) {  // ispravan polozaj
+  if (x > 0) {  // ispravan polozaj volana
     stopMode = 0;
-    for (int i = 0; i < 10; ++i)
-      if (y < -81 + i * angleOffset) {
-        leftWheel = i;
-        rightWheel = 9;
-        return;
-      }
-
-    for (int i = 0; i < 10; ++i)
-      if (y < 9 + i * angleOffset) {
-        leftWheel = 9;
-        rightWheel = 9 - i;
-        return;
-      }
-  } else {  // neispravan polozaj
+    if (y < 0) {
+      leftWheelPercentage = 1 + y / 90;
+      rightWheelPercentage = 1;
+    } else {
+      leftWheelPercentage = 1;
+      rightWheelPercentage = 1 - y / 90;
+    }
+  } else {  // neispravan polozaj volana
     if (y > 70) {
       stopMode = 0;
-      leftWheel = 9;
-      rightWheel = 0;
+      leftWheelPercentage = 1;
+      rightWheelPercentage = 0;
     } else if (y < -70) {
       stopMode = 0;
-      leftWheel = 0;
-      rightWheel = 9;
+      leftWheelPercentage = 0;
+      rightWheelPercentage = 1;
     } else {
       stopMode = 1;
-      leftWheel = 0;
-      rightWheel = 0;
+      leftWheelPercentage = 0;
+      rightWheelPercentage = 0;
     }
   }
 }
 
 void scaleWithPotenciometer() {
-  leftWheel = (int8_t)round((float)leftWheel * getADC1() / 4095);
-  rightWheel = (int8_t)round((float)rightWheel * getADC1() / 4095);
+  uint16_t speed = getADC1();
+
+  leftWheelPercentage *= (float)speed / 4095;
+  rightWheelPercentage *= (float)speed / 4095;
+}
+
+void calculateWheels(int8_t* accelerometerData) {
+  float x, y, z, xAngle, yAngle;
+
+  x = accelerometerData[0];
+  y = accelerometerData[1];
+  z = accelerometerData[2];
+
+  xAngle = atanf(x / sqrt(y * y + z * z)) * 180 / 3.14;
+  yAngle = atanf(y / sqrt(x * x + z * z)) * 180 / 3.14;
+
+  getDataFromAngle(xAngle, yAngle);
+
+  scaleWithPotenciometer();
 }
 
 void initPushbutton() {

@@ -124,9 +124,9 @@ void setLED() {
   if (stopMode) {
     GPIOD->ODR |= 0xF000;
   } else if (directionMode) {
-    GPIOD->ODR |= 0x1000;
-  } else {
     GPIOD->ODR |= 0x4000;
+  } else {
+    GPIOD->ODR |= 0x1000;
   }
 }
 

@@ -2,7 +2,7 @@
 #include "stm32f4xx.h"
 #include "usart.h"
 
-uint16_t d1[16], d2[16];
+uint16_t d[16], r[16];
 uint32_t pausePeriod, stopPeriod;
 
 void initServoMotors();
@@ -23,12 +23,6 @@ int main(void) {
 
   uint32_t connectionLostTime;
   uint8_t connectionLost = 0;
-
-  // for debug
-  /* RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN; */
-  /* GPIOD->MODER |= 0x55000000; */
-  /* GPIOD->OTYPER |= 0x00000000; */
-  /* GPIOD->OSPEEDR |= 0xFF000000; */
 
   while (1) {
     pingSteeringWheel();
@@ -63,11 +57,11 @@ void parseMessage() {
       TIM4->ARR = stopPeriod;
     } else {
       if (high & 0x10) {
-        TIM3->ARR = d1[high & 0x0f];
-        TIM4->ARR = d2[low >> 4];
+        TIM3->ARR = d[high & 0x0f];
+        TIM4->ARR = r[low >> 4];
       } else {
-        TIM3->ARR = d2[high & 0x0f];
-        TIM4->ARR = d1[low >> 4];
+        TIM3->ARR = r[high & 0x0f];
+        TIM4->ARR = d[low >> 4];
       }
     }
   }
@@ -127,10 +121,10 @@ void initServoMotors() {
 
 void initPWMvalues() {
   pausePeriod = 20005;
-  stopPeriod = pausePeriod + 1500;
+  stopPeriod = pausePeriod + 1493;
 
   for (int i = 0; i < 16; ++i) {
-    d1[i] = stopPeriod - i * 200 / 16;
-    d2[i] = stopPeriod + i * 200 / 16;
+    d[i] = stopPeriod - i * 12;
+    r[i] = stopPeriod + i * 10;
   }
 }

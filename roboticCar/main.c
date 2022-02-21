@@ -32,7 +32,7 @@ int main(void) {
       connectionLost = 0;
     } else {
       if (connectionLost) {
-        if (chk4TimeoutSYSTIMER(connectionLostTime, 3000000) ==
+        if (chk4TimeoutSYSTIMER(connectionLostTime, 1500000) ==
             SYSTIMER_TIMEOUT) {
           TIM3->ARR = stopPeriod;
           TIM4->ARR = stopPeriod;
